@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ランダム抽出</title>
+
+<style>
+body {
+  font-family: sans-serif;
+  text-align: center;
+  padding: 20px;
+  background: #f5f5f5;
+}
+
+button {
+  font-size: 18px;
+  padding: 12px 20px;
+  margin: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #4CAF50;
+  color: white;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  margin: 10px auto;
+  padding: 15px;
+  border-radius: 12px;
+  max-width: 500px;
+}
+
+.label {
+  background: #333;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.numbers {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ball {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.extra {
+  background: radial-gradient(circle at 30% 30%, #fff8c6, gold);
+}
+</style>
+</head>
+
+<body>
+
+<h2>43 → 7×6 + 余り1</h2>
+
+<button onclick="generate()">初回生成</button>
+<button onclick="remix()">リミックス（音＋振動）</button>
+
+<div id="output"></div>
+
+<script>
+let pool = [];
+
+// 2桁表示
+function format(num) {
+  return num.toString().padStart(2, '0');
+}
+
+// 配列作成
+function createPool() {
+  let arr = [];
+  for (let i = 1; i <= 43; i++) arr.push(i);
+  return arr;
+}
+
+// シャッフル
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// 🎰 音
+function playSound() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function beep(freq, time, delay) {
+    setTimeout(() => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "square";
+      osc.frequency.value = freq;
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time);
+      osc.stop(ctx.currentTime + time);
+    }, delay);
+  }
+
+  beep(700, 0.08, 0);
+  beep(900, 0.08, 80);
+  beep(700, 0.08, 160);
+  beep(1000, 0.1, 240);
+}
+
+// 📳 振動（スマホ用）
+function vibrate() {
+  if (navigator.vibrate) {
+    navigator.vibrate([30, 20, 30]); // ブルッ…ブルッ
+  }
+}
+
+// 初回
+function generate() {
+  pool = shuffle(createPool());
+  draw();
+}
+
+// リミックス
+function remix() {
+  if (pool.length === 0) {
+    alert("先に生成してください");
+    return;
+  }
+
+  playSound();
+  vibrate();
+
+  pool = shuffle([...pool]);
+  draw();
+}
+
+// 表示
+function draw() {
+  const output = document.getElementById("output");
+  output.innerHTML = "";
+
+  for (let i = 0; i < 6; i++) {
+    let slice = pool.slice(i * 7, i * 7 + 7);
+
+    const row = document.createElement("div");
+    row.className = "row";
+
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = "パターン" + (i + 1);
+
+    const nums = document.createElement("div");
+    nums.className = "numbers";
+
+    slice.forEach(n => {
+      const b = document.createElement("div");
+      b.className = "ball";
+      b.textContent = format(n);
+      nums.appendChild(b);
+    });
+
+    row.appendChild(label);
+    row.appendChild(nums);
+    output.appendChild(row);
+  }
+
+  // 余り
+  const extraRow = document.createElement("div");
+  extraRow.className = "row";
+
+  const label = document.createElement("div");
+  label.className = "label";
+  label.textContent = "余り";
+
+  const nums = document.createElement("div");
+  nums.className = "numbers";
+
+  const b = document.createElement("div");
+  b.className = "ball extra";
+  b.textContent = format(pool[42]);
+
+  nums.appendChild(b);
+  extraRow.appendChild(label);
+  extraRow.appendChild(nums);
+  output.appendChild(extraRow);
+}
+</script>
+
+</body>
+</html>
